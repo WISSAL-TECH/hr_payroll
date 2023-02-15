@@ -14,7 +14,7 @@
     'depends': [
         'hr_contract',
         'hr_holidays',
-        'hr_contract_types',
+       
     ],
     'data': [
         'security/hr_payroll_security.xml',
