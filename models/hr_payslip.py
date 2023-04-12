@@ -171,6 +171,48 @@ class HrPayslip(models.Model):
             payslip.write({'line_ids': lines, 'number': number})
         return True
 
+    def compute_work_days_from_work_entries(self, employee, contracts, date_from, date_to):
+        #Convert date fields to datetime
+        dt_from = datetime.combine(date_from, datetime.min.time())
+        dt_to = datetime.combine(date_to, datetime.max.time())
+        
+        #Get all the work entries of the employee in the payslip period 
+        work_entries = self.env['hr.work.entry'].search([('date_start','<=', dt_to ),
+                                                            ('date_start','>=', dt_from ),
+                                                            ('date_stop','<=', dt_to ),
+                                                            ('date_stop','>=', dt_from ),
+                                                            ('employee_id','=', employee.id)
+                                                            ])
+
+        #Compute total number of hours of each type of work entry
+        entries = {}
+        for work_entry in work_entries:
+            if work_entry.work_entry_type_id.code in entries :
+                entries[work_entry.work_entry_type_id.code] += work_entry.duration
+            else :
+                entries.update({work_entry.work_entry_type_id.code : work_entry.duration} )
+
+
+        resource = contracts.resource_calendar_id
+
+        #Create the new worked days lines
+        vals = []
+        for entry in entries :
+            w_e = self.env['hr.work.entry.type'].search([('code','=',entry)])
+
+            vals.append({
+            
+                'name': w_e.name ,
+                'sequence': 5 if w_e.is_leave else 1,
+                'code': entry,
+                'number_of_days': entries[entry]/ resource.hours_per_day ,
+                'number_of_hours': entries[entry],
+                'contract_id': contracts.id,
+                # 'payslip_id': self.id,
+            })
+        return vals
+
+
     @api.model
     def get_worked_day_lines(self, contracts, date_from, date_to):
 
@@ -490,7 +532,11 @@ class HrPayslip(models.Model):
             contract_ids = self.contract_id.ids
         # computation of the salary input
         contracts = self.env['hr.contract'].browse(contract_ids)
-        worked_days_line_ids = self.get_worked_day_lines(contracts, date_from, date_to)
+
+        # worked_days_line_ids = self.get_worked_day_lines(contracts, date_from, date_to)
+
+        worked_days_line_ids = self.compute_work_days_from_work_entries(employee, contracts, date_from, date_to)
+
         worked_days_lines = self.worked_days_line_ids.browse([])
         for r in worked_days_line_ids:
             worked_days_lines += worked_days_lines.new(r)
