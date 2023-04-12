@@ -42,9 +42,9 @@ class HrPayslip(models.Model):
                           states={'draft': [('readonly', False)]})
     # this is chaos: 4 states are defined, 3 are used ('verify' isn't) and 5 exist ('confirm' seems to have existed)
     state = fields.Selection([
-        ('draft', 'Draft'),
+        ('draft', 'Brouillon'),
         ('verify', 'Waiting'),
-        ('done', 'Done'),
+        ('done', 'Faite'),
         ('cancel', 'Rejected'),
     ], string='Status', index=True, readonly=True, copy=False, default='draft',
         help="""* When the payslip is created the status is \'Draft\'
