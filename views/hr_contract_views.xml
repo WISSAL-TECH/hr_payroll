@@ -60,12 +60,17 @@
         <field name="arch" type="xml">
             <xpath expr="//group[@name='salary']" position="inside">
                 <group>
-                    <field name="cjm"/>
                     <field name="salaire_annuel"/>
                     <field name="taux_charge"/>
                     <field name="nbr_travaille"/>
+                    <field name="cjm"/>
                     <field name="currency"/>
                 </group>
+            </xpath>
+            <xpath expr="//div[@class='o_row' and @name='wage']" position="replace">
+                <div class="o_row" name="wage">
+                        <field name="wage" />
+                </div>
             </xpath>
         </field>
     </record>
