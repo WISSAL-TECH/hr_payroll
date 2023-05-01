@@ -67,10 +67,12 @@
                     <field name="currency"/>
                 </group>
             </xpath>
-            <xpath expr="//div[@class='o_row' and @name='wage']" position="replace">
+            <!--<xpath expr="//div[@class='o_row' and @name='wage']" position="replace">
                 <div class="o_row" name="wage">
-                        <field name="wage" />
+                    <field name="wage"/>
                 </div>
+            </xpath>-->
+            <xpath expr="//group[@name='salary']" position="replace">
             </xpath>
         </field>
     </record>
