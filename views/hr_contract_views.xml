@@ -70,6 +70,7 @@
              <xpath expr="//div[@class='o_row' and @name='wage']" position="replace">
                 <div class="o_row" name="wage">
                     <field name="wage"/>
+
                 </div>
             </xpath>
         </field>
