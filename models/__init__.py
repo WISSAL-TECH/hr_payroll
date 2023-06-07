@@ -1,5 +1,5 @@
 #-*- coding:utf-8 -*-
-
+"""HR Payroll Community"""
 from . import hr_contract
 from . import hr_employee
 from . import res_config_settings

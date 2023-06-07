@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-
+"""definitions of various models related to salary rules and structures."""
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.safe_eval import safe_eval
@@ -18,6 +18,7 @@ class HrPayrollStructure(models.Model):
 
     @api.model
     def _get_parent(self):
+        """Get the parent structure for the current structure"""
         return self.env.ref('hr_payroll_community.structure_base', False)
 
     name = fields.Char(required=True)
@@ -26,18 +27,22 @@ class HrPayrollStructure(models.Model):
         copy=False, default=lambda self: self.env['res.company']._company_default_get())
     note = fields.Text(string='Description')
     parent_id = fields.Many2one('hr.payroll.structure', string='Parent', default=_get_parent)
-    children_ids = fields.One2many('hr.payroll.structure', 'parent_id', string='Children', copy=True)
-    rule_ids = fields.Many2many('hr.salary.rule', 'hr_structure_salary_rule_rel', 'struct_id', 'rule_id', string='Salary Rules')
+    children_ids = fields.One2many('hr.payroll.structure', 'parent_id',
+                                   string='Children', copy=True)
+    rule_ids = fields.Many2many('hr.salary.rule', 'hr_structure_salary_rule_rel',
+                                'struct_id',
+                                'rule_id',
+                                string='Salary Rules')
 
     @api.constrains('parent_id')
     def _check_parent_id(self):
-
+        """Check if the parent structure creates a recursive structure"""
         if not self._check_recursion():
             raise ValidationError(_('You cannot create a recursive salary structure.'))
 
     @api.returns('self', lambda value: value.id)
     def copy(self, default=None):
-
+        """Create a copy of the salary structure"""
         self.ensure_one()
         default = dict(default or {}, code=_("%s (copy)") % (self.code))
         return super(HrPayrollStructure, self).copy(default)
@@ -53,6 +58,7 @@ class HrPayrollStructure(models.Model):
         return all_rules
 
     def _get_parent_structure(self):
+        """Retrieve the parent structures of the current structure."""
 
         parent = self.mapped('parent_id')
         if parent:
@@ -61,6 +67,7 @@ class HrPayrollStructure(models.Model):
 
 
 class HrContributionRegister(models.Model):
+    """ managing the contribution register"""
     _name = 'hr.contribution.register'
     _description = 'Contribution Register'
 
@@ -74,6 +81,7 @@ class HrContributionRegister(models.Model):
 
 
 class HrSalaryRuleCategory(models.Model):
+    """managing salary rule categories"""
     _name = 'hr.salary.rule.category'
     _description = 'Salary Rule Category'
 
@@ -88,12 +96,15 @@ class HrSalaryRuleCategory(models.Model):
 
     @api.constrains('parent_id')
     def _check_parent_id(self):
+        """Check if creating a recursive hierarchy of Salary Rule Category is not allowed"""
 
         if not self._check_recursion():
-            raise ValidationError(_('Error! You cannot create recursive hierarchy of Salary Rule Category.'))
+            raise ValidationError(_('Error! You cannot create recursive'
+                                    ' hierarchy of Salary Rule Category.'))
 
 
 class HrSalaryRule(models.Model):
+    """managing salary rules"""
     _name = 'hr.salary.rule'
     _order = 'sequence, id'
     _description = 'Salary Rule'
@@ -111,7 +122,8 @@ class HrSalaryRule(models.Model):
              "like worked_days.WORK100.number_of_days.")
     category_id = fields.Many2one('hr.salary.rule.category', string='Category', required=True)
     active = fields.Boolean(default=True,
-        help="If the active field is set to false, it will allow you to hide the salary rule without removing it.")
+        help="If the active field is set to false, it will allow you "
+             "to hide the salary rule without removing it.")
     appears_on_payslip = fields.Boolean(string='Appears on Payslip', default=True,
         help="Used to display the salary rule on payslip.")
     parent_rule_id = fields.Many2one('hr.salary.rule', string='Parent Salary Rule', index=True)
@@ -141,16 +153,21 @@ class HrSalaryRule(models.Model):
                     # Note: returned value have to be set in the variable 'result'
 
                     result = rules.NET > categories.NET * 0.10''',
-        help='Applied this rule for calculation if condition is true. You can specify condition like basic > 1000.')
-    condition_range_min = fields.Float(string='Minimum Range', help="The minimum amount, applied for this rule.")
-    condition_range_max = fields.Float(string='Maximum Range', help="The maximum amount, applied for this rule.")
+        help='Applied this rule for calculation if condition is true. '
+             'You can specify condition like basic > 1000.')
+    condition_range_min = fields.Float(string='Minimum Range',
+                                       help="The minimum amount, applied for this rule.")
+    condition_range_max = fields.Float(string='Maximum Range',
+                                       help="The maximum amount, applied for this rule.")
     amount_select = fields.Selection([
         ('percentage', 'Percentage (%)'),
         ('fix', 'Fixed Amount'),
         ('code', 'Python Code'),
-    ], string='Amount Type', index=True, required=True, default='fix', help="The computation method for the rule amount.")
+    ], string='Amount Type', index=True, required=True, default='fix',
+        help="The computation method for the rule amount.")
     amount_fix = fields.Float(string='Fixed Amount', digits=dp.get_precision('Payroll'))
-    amount_percentage = fields.Float(string='Percentage (%)', digits=dp.get_precision('Payroll Rate'),
+    amount_percentage = fields.Float(string='Percentage (%)',
+                                     digits=dp.get_precision('Payroll Rate'),
         help='For example, enter 50.0 to apply a percentage of 50%')
     amount_python_compute = fields.Text(string='Python Code',
         default='''
@@ -167,8 +184,10 @@ class HrSalaryRule(models.Model):
                     # Note: returned value have to be set in the variable 'result'
 
                     result = contract.wage * 0.10''')
-    amount_percentage_base = fields.Char(string='Percentage based on', help='result will be affected to a variable')
-    child_ids = fields.One2many('hr.salary.rule', 'parent_rule_id', string='Child Salary Rule', copy=True)
+    amount_percentage_base = fields.Char(string='Percentage based on',
+                                         help='result will be affected to a variable')
+    child_ids = fields.One2many('hr.salary.rule', 'parent_rule_id',
+                                string='Child Salary Rule', copy=True)
     register_id = fields.Many2one('hr.contribution.register', string='Contribution Register',
         help="Eventual third party involved in the salary payment of the employees.")
     input_ids = fields.One2many('hr.rule.input', 'input_id', string='Inputs', copy=True)
@@ -176,12 +195,15 @@ class HrSalaryRule(models.Model):
 
     @api.constrains('parent_rule_id')
     def _check_parent_rule_id(self):
+        """Check if creating a recursive hierarchy of Salary Rules is not allowed."""
         if not self._check_recursion(parent='parent_rule_id'):
-            raise ValidationError(_('Error! You cannot create recursive hierarchy of Salary Rules.'))
+            raise ValidationError(_('Error! You cannot create '
+                                    'recursive hierarchy of Salary Rules.'))
 
     def _recursive_search_of_rules(self):
         """
-        @return: returns a list of tuple (id, sequence) which are all the children of the passed rule_ids
+        @return: returns a list of tuple (id, sequence) which
+        are all the children of the passed rule_ids
         """
         children_rules = []
         for rule in self.filtered(lambda rule: rule.child_ids):
@@ -201,26 +223,33 @@ class HrSalaryRule(models.Model):
             try:
                 return self.amount_fix, float(safe_eval(self.quantity, localdict)), 100.0
             except:
-                raise UserError(_('Wrong quantity defined for salary rule %s (%s).') % (self.name, self.code))
+                raise UserError(_('Wrong quantity defined for salary rule %s (%s).') % (
+                    self.name, self.code))
         elif self.amount_select == 'percentage':
             try:
                 return (float(safe_eval(self.amount_percentage_base, localdict)),
                         float(safe_eval(self.quantity, localdict)),
                         self.amount_percentage)
             except:
-                raise UserError(_('Wrong percentage base or quantity defined for salary rule %s (%s).') % (self.name, self.code))
+                raise UserError(_(
+                    'Wrong percentage base or quantity defined for salary rule %s (%s).'
+                                  ) % (self.name, self.code))
         else:
             try:
                 safe_eval(self.amount_python_compute, localdict, mode='exec', nocopy=True)
-                return float(localdict['result']), 'result_qty' in localdict and localdict['result_qty'] or 1.0, 'result_rate' in localdict and localdict['result_rate'] or 100.0
+                return float(localdict['result']), 'result_qty' in localdict and localdict[
+                    'result_qty'] or 1.0, 'result_rate' in localdict and localdict[
+                    'result_rate'] or 100.0
             except:
-                raise UserError(_('Wrong python code defined for salary rule %s (%s).') % (self.name, self.code))
+                raise UserError(_('Wrong python code defined for salary rule %s (%s).') % (
+                    self.name, self.code))
 
     def _satisfy_condition(self, localdict):
 
         """
         @param contract_id: id of hr.contract to be tested
-        @return: returns True if the given rule match the condition for the given contract. Return False otherwise.
+        @return: returns True if the given rule match the condition for the given contract.
+        Return False otherwise.
         """
         self.ensure_one()
 
@@ -229,18 +258,22 @@ class HrSalaryRule(models.Model):
         elif self.condition_select == 'range':
             try:
                 result = safe_eval(self.condition_range, localdict)
-                return self.condition_range_min <= result and result <= self.condition_range_max or False
+                #return self.condition_range_min <= result and result <= self.condition_range_max or False
+                return self.condition_range_min <= result and result <= self.condition_range_max
             except:
-                raise UserError(_('Wrong range condition defined for salary rule %s (%s).') % (self.name, self.code))
+                raise UserError(_('Wrong range condition defined for salary rule %s (%s).') % (
+                    self.name, self.code))
         else:  # python code
             try:
                 safe_eval(self.condition_python, localdict, mode='exec', nocopy=True)
                 return 'result' in localdict and localdict['result'] or False
             except:
-                raise UserError(_('Wrong python condition defined for salary rule %s (%s).') % (self.name, self.code))
+                raise UserError(_('Wrong python condition defined for salary rule %s (%s).') % (
+                    self.name, self.code))
 
 
 class HrRuleInput(models.Model):
+    """Represents a Salary Rule Input used in salary rules for computation"""
     _name = 'hr.rule.input'
     _description = 'Salary Rule Input'
 

@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
-
-import babel
-from collections import defaultdict
-from datetime import date, datetime, time
+"""hr paylip"""
 from datetime import timedelta
+from datetime import date, datetime, time
+from collections import defaultdict
+import babel
 from dateutil.relativedelta import relativedelta
 from pytz import timezone
 from pytz import utc
@@ -18,20 +18,25 @@ ROUNDING_FACTOR = 16
 
 
 class HrPayslip(models.Model):
+    """payslip records in the system"""
     _name = 'hr.payslip'
     _description = 'Pay Slip'
 
     struct_id = fields.Many2one('hr.payroll.structure', string='Structure',
                                 readonly=True, states={'draft': [('readonly', False)]},
-                                help='Defines the rules that have to be applied to this payslip, accordingly '
-                                     'to the contract chosen. If you let empty the field contract, this field isn\'t '
-                                     'mandatory anymore and thus the rules applied will be all the rules set on the '
-                                     'structure of all contracts of the employee valid for the chosen period')
+                                help='Defines the rules that have to be applied to this payslip, '
+                                     'accordingly ''to the contract chosen. If you let empty the '
+                                     'field contract, this field isn\'t '
+                                     'mandatory anymore and thus'
+                                     'the rules applied will be all the rules set on the '
+                                     'structure of all contracts of the employee '
+                                     'valid for the chosen period')
     name = fields.Char(string='Payslip Name', readonly=True,
                        states={'draft': [('readonly', False)]})
     number = fields.Char(string='Reference', readonly=True, copy=False, help="References",
                          states={'draft': [('readonly', False)]})
-    employee_id = fields.Many2one('hr.employee', string='Employee', required=True, readonly=True, help="Employee",
+    employee_id = fields.Many2one('hr.employee', string='Employee', required=True, readonly=True,
+                                  help="Employee",
                                   states={'draft': [('readonly', False)]})
     date_from = fields.Date(string='Date From', readonly=True, required=True, help="Start date",
                             default=lambda self: fields.Date.to_string(date.today().replace(day=1)),
@@ -40,7 +45,9 @@ class HrPayslip(models.Model):
                           default=lambda self: fields.Date.to_string(
                               (datetime.now() + relativedelta(months=+1, day=1, days=-1)).date()),
                           states={'draft': [('readonly', False)]})
-    # this is chaos: 4 states are defined, 3 are used ('verify' isn't) and 5 exist ('confirm' seems to have existed)
+    # this is chaos: 4 states are defined, 3 are used ('verify' isn't)
+    # and 5 exist ('confirm' seems to
+    # have existed)
     state = fields.Selection([
         ('draft', 'Draft'),
         ('verify', 'Waiting'),
@@ -53,8 +60,10 @@ class HrPayslip(models.Model):
                 \n* When user cancel payslip the status is \'Rejected\'.""")
     line_ids = fields.One2many('hr.payslip.line', 'slip_id', string='Payslip Lines', readonly=True,
                                states={'draft': [('readonly', False)]})
-    company_id = fields.Many2one('res.company', string='Company', readonly=True, copy=False, help="Company",
-                                 default=lambda self: self.env['res.company']._company_default_get(),
+    company_id = fields.Many2one('res.company', string='Company',
+                                 readonly=True, copy=False, help="Company",
+                                 default=lambda self:
+                                 self.env['res.company']._company_default_get(),
                                  states={'draft': [('readonly', False)]})
     worked_days_line_ids = fields.One2many('hr.payslip.worked_days', 'payslip_id',
                                            string='Payslip Worked Days', copy=True, readonly=True,
@@ -64,22 +73,27 @@ class HrPayslip(models.Model):
                                      readonly=True, states={'draft': [('readonly', False)]})
     paid = fields.Boolean(string='Made Payment Order ? ', readonly=True, copy=False,
                           states={'draft': [('readonly', False)]})
-    note = fields.Text(string='Internal Note', readonly=True, states={'draft': [('readonly', False)]})
+    note = fields.Text(string='Internal Note', readonly=True,
+                       states={'draft': [('readonly', False)]})
     contract_id = fields.Many2one('hr.contract', string='Contract', readonly=True, help="Contract",
                                   states={'draft': [('readonly', False)]})
     details_by_salary_rule_category = fields.One2many('hr.payslip.line',
-                                                      compute='_compute_details_by_salary_rule_category',
-                                                      string='Details by Salary Rule Category', help="Details from the salary rule category")
+                                                      compute='_compute_details'
+                                                              '_by_salary_rule_category',
+                                                      string='Details by Salary Rule Category',
+                                                      help="Details from the salary rule category")
     credit_note = fields.Boolean(string='Credit Note', readonly=True,
                                  states={'draft': [('readonly', False)]},
                                  help="Indicates this payslip has a refund of another")
     payslip_run_id = fields.Many2one('hr.payslip.run', string='Payslip Batches', readonly=True,
                                      copy=False, states={'draft': [('readonly', False)]})
-    payslip_count = fields.Integer(compute='_compute_payslip_count', string="Payslip Computation Details")
+    payslip_count = fields.Integer(compute='_compute_payslip_count',
+                                   string="Payslip Computation Details")
 
     def _compute_details_by_salary_rule_category(self):
         for payslip in self:
-            payslip.details_by_salary_rule_category = payslip.mapped('line_ids').filtered(lambda line: line.category_id)
+            payslip.details_by_salary_rule_category = payslip.mapped('line_ids').filtered(
+                lambda line: line.category_id)
 
     def _compute_payslip_count(self):
         for payslip in self:
@@ -92,24 +106,28 @@ class HrPayslip(models.Model):
             raise ValidationError(_("Payslip 'Date From' must be earlier 'Date To'."))
 
     def action_payslip_draft(self):
-
+        """Mark the payslip records as draft"""
         return self.write({'state': 'draft'})
 
     def action_payslip_done(self):
+        """Mark the payslip records as done."""
 
         self.compute_sheet()
         return self.write({'state': 'done'})
 
     def action_payslip_cancel(self):
+        """Cancel the payslip records"""
 
         if self.filtered(lambda slip: slip.state == 'done'):
             raise UserError(_("Cannot cancel a payslip that is done."))
         return self.write({'state': 'cancel'})
 
     def refund_sheet(self):
+        "Refund the payslip records"
         for payslip in self:
 
-            copied_payslip = payslip.copy({'credit_note': True, 'name': _('Refund: ') + payslip.name})
+            copied_payslip = payslip.copy({'credit_note': True,
+                                           'name': _('Refund: ') + payslip.name})
             copied_payslip.compute_sheet()
             copied_payslip.action_payslip_done()
         formview_ref = self.env.ref('hr_payroll_community.view_hr_payslip_form', False)
@@ -128,10 +146,10 @@ class HrPayslip(models.Model):
         }
 
     def check_done(self):
-
         return True
 
     def unlink(self):
+        """Delete the payslip records"""
 
         if any(self.filtered(lambda payslip: payslip.state not in ('draft', 'cancel'))):
             raise UserError(_('You cannot delete a payslip which is not draft or cancelled!'))
@@ -145,28 +163,34 @@ class HrPayslip(models.Model):
         @param employee: recordset of employee
         @param date_from: date field
         @param date_to: date field
-        @return: returns the ids of all the contracts for the given employee that need to be considered for the given dates
+        @return: returns the ids of all the contracts for the
+        given employee that need to be considered
+        for the given dates
         """
         # a contract is valid if it ends between the given dates
         clause_1 = ['&', ('date_end', '<=', date_to), ('date_end', '>=', date_from)]
         # OR if it starts between the given dates
         clause_2 = ['&', ('date_start', '<=', date_to), ('date_start', '>=', date_from)]
         # OR if it starts before the date_from and finish after the date_end (or never finish)
-        clause_3 = ['&', ('date_start', '<=', date_from), '|', ('date_end', '=', False), ('date_end', '>=', date_to)]
+        clause_3 = ['&', ('date_start', '<=', date_from), '|', ('date_end', '=', False),
+                    ('date_end', '>=', date_to)]
         clause_final = [('employee_id', '=', employee.id), ('state', '=', 'open'), '|',
                         '|'] + clause_1 + clause_2 + clause_3
         return self.env['hr.contract'].search(clause_final).ids
 
     def compute_sheet(self):
+        """Compute the salary slip for each payslip record"""
 
         for payslip in self:
             number = payslip.number or self.env['ir.sequence'].next_by_code('salary.slip')
             # delete old payslip lines
             payslip.line_ids.unlink()
             # set the list of contract for which the rules have to be applied
-            # if we don't give the contract, then the rules to apply should be for all current contracts of the employee
+            # if we don't give the contract, then the rules to apply should be for all current
+            # contracts of the employee
             contract_ids = payslip.contract_id.ids or \
-                           self.get_contract(payslip.employee_id, payslip.date_from, payslip.date_to)
+                           self.get_contract(payslip.employee_id,
+                                             payslip.date_from, payslip.date_to)
             lines = [(0, 0, line) for line in self._get_payslip_lines(contract_ids, payslip.id)]
             payslip.write({'line_ids': lines, 'number': number})
         return True
@@ -176,7 +200,8 @@ class HrPayslip(models.Model):
 
         """
         @param contract: Browse record of contracts
-        @return: returns a list of dict containing the input that should be applied for the given contract between date_from and date_to
+        @return: returns a list of dict containing the input that should be applied for the given
+        contract between date_from and date_to
         """
         res = []
         # fill only if the contract as a working schedule linked
@@ -189,7 +214,8 @@ class HrPayslip(models.Model):
             calendar = contract.resource_calendar_id
             tz = timezone(calendar.tz)
             day_leave_intervals = contract.employee_id.list_leaves(day_from, day_to,
-                                                                   calendar=contract.resource_calendar_id)
+                                                                   calendar=
+                                                                   contract.resource_calendar_id)
             for day, hours, leave in day_leave_intervals:
                 holiday = leave.holiday_id
                 current_leave_struct = leaves.setdefault(holiday.holiday_status_id, {
@@ -211,7 +237,8 @@ class HrPayslip(models.Model):
 
             # compute worked days
             work_data = contract.employee_id.get_work_days_data(day_from, day_to,
-                                                                calendar=contract.resource_calendar_id)
+                                                                calendar=
+                                                                contract.resource_calendar_id)
             attendances = {
                 'name': _("Normal Working Days paid at 100%"),
                 'sequence': 1,
@@ -227,6 +254,7 @@ class HrPayslip(models.Model):
 
     @api.model
     def get_inputs(self, contracts, date_from, date_to):
+        """Retrieve inputs for the given contracts and date range"""
 
         res = []
 
@@ -251,11 +279,15 @@ class HrPayslip(models.Model):
         def _sum_salary_rule_category(localdict, category, amount):
             if category.parent_id:
                 localdict = _sum_salary_rule_category(localdict, category.parent_id, amount)
-            localdict['categories'].dict[category.code] = category.code in localdict['categories'].dict and \
-                                                          localdict['categories'].dict[category.code] + amount or amount
+            localdict['categories'].dict[category.code] = category.code \
+                                                          in localdict['categories'].dict \
+                                                          and localdict[
+                                                              'categories'].dict[category.code] + \
+                                                          amount or amount
             return localdict
 
         class BrowsableObject(object):
+            "Represents a browsable object with attributes stored in a dictionary"
             def __init__(self, employee_id, dict, env):
                 self.employee_id = employee_id
                 self.dict = dict
@@ -268,13 +300,15 @@ class HrPayslip(models.Model):
             """a class that will be used into the python code, mainly for usability purposes"""
 
             def sum(self, code, from_date, to_date=None):
+                """Calculate the sum of amounts for a specified input code"""
                 if to_date is None:
                     to_date = fields.Date.today()
                 self.env.cr.execute("""
                     SELECT sum(amount) as sum
                     FROM hr_payslip as hp, hr_payslip_input as pi
                     WHERE hp.employee_id = %s AND hp.state = 'done'
-                    AND hp.date_from >= %s AND hp.date_to <= %s AND hp.id = pi.payslip_id AND pi.code = %s""",
+                    AND hp.date_from >= %s AND hp.date_to <= %s AND hp.id = pi.payslip_id 
+                    AND pi.code = %s""",
                                     (self.employee_id, from_date, to_date, code))
                 return self.env.cr.fetchone()[0] or 0.0
 
@@ -288,15 +322,18 @@ class HrPayslip(models.Model):
                     SELECT sum(number_of_days) as number_of_days, sum(number_of_hours) as number_of_hours
                     FROM hr_payslip as hp, hr_payslip_worked_days as pi
                     WHERE hp.employee_id = %s AND hp.state = 'done'
-                    AND hp.date_from >= %s AND hp.date_to <= %s AND hp.id = pi.payslip_id AND pi.code = %s""",
+                    AND hp.date_from >= %s AND hp.date_to <= %s AND hp.id = pi.payslip_id 
+                    AND pi.code = %s""",
                                     (self.employee_id, from_date, to_date, code))
                 return self.env.cr.fetchone()
 
             def sum(self, code, from_date, to_date=None):
+                """Compute the sum of amounts for the specified code within the given date range."""
                 res = self._sum(code, from_date, to_date)
                 return res and res[0] or 0.0
 
             def sum_hours(self, code, from_date, to_date=None):
+                """Compute the sum of hours for the specified code within the given date range."""
                 res = self._sum(code, from_date, to_date)
                 return res and res[1] or 0.0
 
@@ -304,17 +341,22 @@ class HrPayslip(models.Model):
             """a class that will be used into the python code, mainly for usability purposes"""
 
             def sum(self, code, from_date, to_date=None):
+                """Calculate the sum of values for a specified payroll line code"""
                 if to_date is None:
                     to_date = fields.Date.today()
-                self.env.cr.execute("""SELECT sum(case when hp.credit_note = False then (pl.total) else (-pl.total) end)
+                self.env.cr.execute("""SELECT sum(case when hp.credit_note
+                = False then (pl.total) 
+                else (-pl.total) end)
                             FROM hr_payslip as hp, hr_payslip_line as pl
                             WHERE hp.employee_id = %s AND hp.state = 'done'
-                            AND hp.date_from >= %s AND hp.date_to <= %s AND hp.id = pl.slip_id AND pl.code = %s""",
+                            AND hp.date_from >= %s AND hp.date_to <= %s AND hp.id = pl.slip_id 
+                            AND pl.code = %s""",
                                     (self.employee_id, from_date, to_date, code))
                 res = self.env.cr.fetchone()
                 return res and res[0] or 0.0
 
-        # we keep a dict with the result because a value can be overwritten by another rule with the same code
+        # we keep a dict with the result because a value can be overwritten by another rule with the
+        # same code
         result_dict = {}
         rules_dict = {}
         worked_days_dict = {}
@@ -332,7 +374,8 @@ class HrPayslip(models.Model):
         payslips = Payslips(payslip.employee_id.id, payslip, self.env)
         rules = BrowsableObject(payslip.employee_id.id, rules_dict, self.env)
 
-        baselocaldict = {'categories': categories, 'rules': rules, 'payslip': payslips, 'worked_days': worked_days,
+        baselocaldict = {'categories': categories, 'rules': rules, 'payslip': payslips,
+                         'worked_days': worked_days,
                          'inputs': inputs}
         # get the ids of the structures on the contracts and their parent id as well
         contracts = self.env['hr.contract'].browse(contract_ids)
@@ -365,7 +408,8 @@ class HrPayslip(models.Model):
                     localdict[rule.code] = tot_rule
                     rules_dict[rule.code] = rule
                     # sum the amount for its salary category
-                    localdict = _sum_salary_rule_category(localdict, rule.category_id, tot_rule - previous_amount)
+                    localdict = _sum_salary_rule_category(localdict, rule.category_id,
+                                                          tot_rule - previous_amount)
                     # create/overwrite the rule in the temporary results
                     result_dict[key] = {
                         'salary_rule_id': rule.id,
@@ -400,7 +444,10 @@ class HrPayslip(models.Model):
     # YTI TODO To rename. This method is not really an onchange, as it is not in any view
     # employee_id and contract_id could be browse records
     def onchange_employee_id(self, date_from, date_to, employee_id=False, contract_id=False):
-
+        """
+        Triggered when the employee_id field is changed.
+        Performs various computations and updates based on the selected employee and dates.
+        """
         # defaults
         res = {
             'value': {
@@ -422,7 +469,8 @@ class HrPayslip(models.Model):
         locale = self.env.context.get('lang') or 'en_US'
         res['value'].update({
             'name': _('Salary Slip of %s for %s') % (
-            employee.name, tools.ustr(babel.dates.format_date(date=ttyme, format='MMMM-y', locale=locale))),
+            employee.name, tools.ustr(babel.dates.format_date(
+                date=ttyme, format='MMMM-y', locale=locale))),
             'company_id': employee.company_id.id,
         })
 
@@ -434,7 +482,8 @@ class HrPayslip(models.Model):
                 # set the list of contract for which the input have to be filled
                 contract_ids = [contract_id]
             else:
-                # if we don't give the contract, then the input to fill should be for all current contracts of the employee
+                # if we don't give the contract, then the input to fill should be for all
+                # current contracts of the employee
                 contract_ids = self.get_contract(employee, date_from, date_to)
 
         if not contract_ids:
@@ -461,6 +510,7 @@ class HrPayslip(models.Model):
 
     @api.onchange('employee_id', 'date_from', 'date_to')
     def onchange_employee(self):
+        """Triggered when the employee, date_from, or date_to fields are changed."""
 
 
         if (not self.employee_id) or (not self.date_from) or (not self.date_to):
@@ -474,7 +524,8 @@ class HrPayslip(models.Model):
         ttyme = datetime.combine(fields.Date.from_string(date_from), time.min)
         locale = self.env.context.get('lang') or 'en_US'
         self.name = _('Salary Slip of %s for %s') % (
-        employee.name, tools.ustr(babel.dates.format_date(date=ttyme, format='MMMM-y', locale=locale)))
+        employee.name, tools.ustr(babel.dates.format_date(date=ttyme,
+                                                          format='MMMM-y', locale=locale)))
         self.company_id = employee.company_id
 
         if not self.env.context.get('contract') or not self.contract_id:
@@ -505,6 +556,7 @@ class HrPayslip(models.Model):
 
     @api.onchange('contract_id')
     def onchange_contract(self):
+        """Triggered when the contract is changed"""
 
         if not self.contract_id:
             self.struct_id = False
@@ -512,6 +564,7 @@ class HrPayslip(models.Model):
         return
 
     def get_salary_line_total(self, code):
+        """Get the total amount for a specific salary line code."""
 
         self.ensure_one()
         line = self.line_ids.filtered(lambda line: line.code == code)
@@ -522,47 +575,58 @@ class HrPayslip(models.Model):
 
 
 class HrPayslipLine(models.Model):
+    """Model for representing a line in a payslip"""
     _name = 'hr.payslip.line'
     _inherit = 'hr.salary.rule'
     _description = 'Payslip Line'
     _order = 'contract_id, sequence'
 
-    slip_id = fields.Many2one('hr.payslip', string='Pay Slip', required=True, ondelete='cascade', help="Payslip")
-    salary_rule_id = fields.Many2one('hr.salary.rule', string='Rule', required=True, help="salary rule")
+    slip_id = fields.Many2one('hr.payslip', string='Pay Slip', required=True, ondelete='cascade',
+                              help="Payslip")
+    salary_rule_id = fields.Many2one('hr.salary.rule', string='Rule',
+                                     required=True, help="salary rule")
     employee_id = fields.Many2one('hr.employee', string='Employee', required=True, help="Employee")
-    # category_id = fields.Many2one(related='salary_rule_id.category_id', string='Category', required=True)
-    contract_id = fields.Many2one('hr.contract', string='Contract', required=True, index=True, help="Contract")
+    # category_id = fields.Many2one(related='salary_rule_id.category_id',
+    # string='Category', required=True)
+    contract_id = fields.Many2one('hr.contract', string='Contract', required=True, index=True,
+                                  help="Contract")
     rate = fields.Float(string='Rate (%)', digits=dp.get_precision('Payroll Rate'), default=100.0)
     amount = fields.Float(digits=dp.get_precision('Payroll'))
     quantity = fields.Float(digits=dp.get_precision('Payroll'), default=1.0)
-    total = fields.Float(compute='_compute_total', string='Total', help="Total", digits=dp.get_precision('Payroll'), store=True)
+    total = fields.Float(compute='_compute_total', string='Total', help="Total",
+                         digits=dp.get_precision('Payroll'), store=True)
 
     @api.depends('quantity', 'amount', 'rate')
     def _compute_total(self):
+        """Compute the total amount for each line"""
 
         for line in self:
             line.total = float(line.quantity) * line.amount * line.rate / 100
 
     @api.model_create_multi
     def create(self, vals_list):
+        """Create payslip lines"""
 
         for values in vals_list:
             if 'employee_id' not in values or 'contract_id' not in values:
                 payslip = self.env['hr.payslip'].browse(values.get('slip_id'))
                 values['employee_id'] = values.get('employee_id') or payslip.employee_id.id
-                values['contract_id'] = values.get('contract_id') or payslip.contract_id and payslip.contract_id.id
+                values['contract_id'] = values.get('contract_id') or payslip.contract_id \
+                                        and payslip.contract_id.id
                 if not values['contract_id']:
                     raise UserError(_('You must set a contract to create a payslip line.'))
         return super(HrPayslipLine, self).create(vals_list)
 
 
 class HrPayslipWorkedDays(models.Model):
+    """Model for managing worked days in a payslip"""
     _name = 'hr.payslip.worked_days'
     _description = 'Payslip Worked Days'
     _order = 'payslip_id, sequence'
 
     name = fields.Char(string='Description', required=True)
-    payslip_id = fields.Many2one('hr.payslip', string='Pay Slip', required=True, ondelete='cascade', index=True, help="Payslip")
+    payslip_id = fields.Many2one('hr.payslip', string='Pay Slip', required=True, ondelete='cascade',
+                                 index=True, help="Payslip")
     sequence = fields.Integer(required=True, index=True, default=10, help="Sequence")
     code = fields.Char(required=True, help="The code that can be used in the salary rules")
     number_of_days = fields.Float(string='Number of Days', help="Number of days worked")
@@ -572,22 +636,26 @@ class HrPayslipWorkedDays(models.Model):
 
 
 class HrPayslipInput(models.Model):
+    """Model for managing payslip inputs"""
     _name = 'hr.payslip.input'
     _description = 'Payslip Input'
     _order = 'payslip_id, sequence'
 
     name = fields.Char(string='Description', required=True)
-    payslip_id = fields.Many2one('hr.payslip', string='Pay Slip', required=True, ondelete='cascade', help="Payslip", index=True)
+    payslip_id = fields.Many2one('hr.payslip', string='Pay Slip', required=True, ondelete='cascade',
+                                 help="Payslip", index=True)
     sequence = fields.Integer(required=True, index=True, default=10, help="Sequence")
     code = fields.Char(required=True, help="The code that can be used in the salary rules")
     amount = fields.Float(help="It is used in computation. For e.g. A rule for sales having "
-                               "1% commission of basic salary for per product can defined in expression "
+                               "1% commission of basic salary for per product can "
+                               "defined in expression "
                                "like result = inputs.SALEURO.amount * contract.wage*0.01.")
     contract_id = fields.Many2one('hr.contract', string='Contract', required=True,
                                   help="The contract for which applied this input")
 
 
 class HrPayslipRun(models.Model):
+    """Model for managing payslip batches."""
     _name = 'hr.payslip.run'
     _description = 'Payslip Batches'
 
@@ -600,27 +668,35 @@ class HrPayslipRun(models.Model):
     ], string='Status', index=True, readonly=True, copy=False, default='draft')
     date_start = fields.Date(string='Date From', required=True, readonly=True, help="start date",
                              states={'draft': [('readonly', False)]},
-                             default=lambda self: fields.Date.to_string(date.today().replace(day=1)))
+                             default=lambda self: fields.Date.to_string(
+                                 date.today().replace(day=1)))
     date_end = fields.Date(string='Date To', required=True, readonly=True, help="End date",
                            states={'draft': [('readonly', False)]},
                            default=lambda self: fields.Date.to_string(
                                (datetime.now() + relativedelta(months=+1, day=1, days=-1)).date()))
     credit_note = fields.Boolean(string='Credit Note', readonly=True,
                                  states={'draft': [('readonly', False)]},
-                                 help="If its checked, indicates that all payslips generated from here are refund "
-                                      "payslips.")
+                                 help="If its checked, indicates that all payslips generated "
+                                      "from here are refund payslips.")
 
     def draft_payslip_run(self):
+        """Reverts the payslip run to draft state."""
         return self.write({'state': 'draft'})
 
     def close_payslip_run(self):
+        """Closes the payslip run."""
         return self.write({'state': 'close'})
 
 
 class ResourceMixin(models.AbstractModel):
+    """
+    Abstract model for resource mixin.
+    This class is inherited by other classes to add resource management functionalities.
+    """
     _inherit = "resource.mixin"
 
-    def get_work_days_data(self, from_datetime, to_datetime, compute_leaves=True, calendar=None, domain=None):
+    def get_work_days_data(self, from_datetime, to_datetime, compute_leaves=True, calendar=None,
+                           domain=None):
         """
             By default the resource calendar is used, but it can be
             changed using the `calendar` argument.

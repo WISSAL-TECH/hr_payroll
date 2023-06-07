@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""HR Payroll Community"""
 
 {
     'name': 'Odoo15 Payroll',

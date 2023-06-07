@@ -1,16 +1,19 @@
 #-*- coding:utf-8 -*-
-
+"""Payslip Details Report"""
 from odoo import api, models
 
 class PayslipDetailsReport(models.AbstractModel):
+    """Payslip Details Report"""
     _name = 'report.hr_payroll_community.report_payslipdetails'
     _description = 'Payslip Details Report'
 
     def get_details_by_rule_category(self, payslip_lines):
+        """Retrieve payslip details organized by rule category"""
         PayslipLine = self.env['hr.payslip.line']
         RuleCateg = self.env['hr.salary.rule.category']
 
         def get_recursive_parent(current_rule_category, rule_categories=None):
+            """Recursively retrieve all parent rule categories of a given rule category"""
             if rule_categories:
                 rule_categories = current_rule_category | rule_categories
             else:
@@ -62,6 +65,7 @@ class PayslipDetailsReport(models.AbstractModel):
         return res
 
     def get_lines_by_contribution_register(self, payslip_lines):
+        """Retrieve payslip lines organized by contribution register"""
         result = {}
         res = {}
         for line in payslip_lines.filtered('register_id'):
@@ -87,12 +91,16 @@ class PayslipDetailsReport(models.AbstractModel):
 
     @api.model
     def _get_report_values(self, docids, data=None):
+        """Get the values required for the report"""
         payslips = self.env['hr.payslip'].browse(docids)
         return {
             'doc_ids': docids,
             'doc_model': 'hr.payslip',
             'docs': payslips,
             'data': data,
-            'get_details_by_rule_category': self.get_details_by_rule_category(payslips.mapped('details_by_salary_rule_category').filtered(lambda r: r.appears_on_payslip)),
-            'get_lines_by_contribution_register': self.get_lines_by_contribution_register(payslips.mapped('line_ids').filtered(lambda r: r.appears_on_payslip)),
+            'get_details_by_rule_category': self.get_details_by_rule_category(
+                payslips.mapped('details_by_salary_rule_category').filtered(
+                    lambda r: r.appears_on_payslip)),
+            'get_lines_by_contribution_register': self.get_lines_by_contribution_register(
+                payslips.mapped('line_ids').filtered(lambda r: r.appears_on_payslip)),
         }

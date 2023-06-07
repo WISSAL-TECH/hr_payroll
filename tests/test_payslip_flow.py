@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
+"""test cases for the payslip flow and report printing."""
 
-import os
-
-from odoo.tools import config, test_reports
+from odoo.tools import test_reports
 from odoo.addons.hr_payroll_community.tests.common import TestPayslipBase
 
 
 class TestPayslipFlow(TestPayslipBase):
-
+    """Test case for the payslip flow and report printing"""
     def test_00_payslip_flow(self):
         """ Testing payslip flow and report printing """
         # I create an employee Payslip
@@ -16,7 +15,8 @@ class TestPayslipFlow(TestPayslipBase):
             'employee_id': self.richard_emp.id
         })
 
-        payslip_input = self.env['hr.payslip.input'].search([('payslip_id', '=', richard_payslip.id)])
+        payslip_input = self.env['hr.payslip.input'].search(
+            [('payslip_id', '=', richard_payslip.id)])
         # I assign the amount to Input data
         payslip_input.write({'amount': 5.0})
 
@@ -42,7 +42,8 @@ class TestPayslipFlow(TestPayslipBase):
         richard_payslip.refund_sheet()
 
         # I check on new payslip Credit Note is checked or not.
-        payslip_refund = self.env['hr.payslip'].search([('name', 'like', 'Refund: '+ richard_payslip.name), ('credit_note', '=', True)])
+        payslip_refund = self.env['hr.payslip'].search([
+            ('name', 'like', 'Refund: '+ richard_payslip.name), ('credit_note', '=', True)])
         self.assertTrue(bool(payslip_refund), "Payslip not refunded!")
 
         # I want to generate a payslip from Payslip run.
@@ -68,11 +69,16 @@ class TestPayslipFlow(TestPayslipBase):
         })
 
         # I print the payslip report
-        data, data_format = self.env.ref('hr_payroll_community.action_report_payslip').render(richard_payslip.ids)
+        data, data_format = self.env.ref(
+            'hr_payroll_community.action_report_payslip').render(richard_payslip.ids)
 
         # I print the payslip details report
-        data, data_format = self.env.ref('hr_payroll_community.payslip_details_report').render(richard_payslip.ids)
+        data, data_format = self.env.ref(
+            'hr_payroll_community.payslip_details_report').render(richard_payslip.ids)
 
         # I print the contribution register report
-        context = {'model': 'hr.contribution.register', 'active_ids': [self.ref('hr_payroll_community.hr_houserent_register')]}
-        test_reports.try_report_action(self.env.cr, self.env.uid, 'action_payslip_lines_contribution_register', context=context, our_module='hr_payroll_community')
+        context = {'model': 'hr.contribution.register', 'active_ids': [
+            self.ref('hr_payroll_community.hr_houserent_register')]}
+        test_reports.try_report_action(self.env.cr, self.env.uid,
+                                       'action_payslip_lines_contribution_register',
+                                       context=context, our_module='hr_payroll_community')

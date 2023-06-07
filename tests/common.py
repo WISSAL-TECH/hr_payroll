@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+"""base test case class for testing the payroll system"""
 from datetime import datetime, timedelta
 
 from odoo.fields import Date
@@ -7,8 +7,9 @@ from odoo.tests.common import TransactionCase
 
 
 class TestPayslipBase(TransactionCase):
-
+    """Base test case class for testing the payroll system"""
     def setUp(self):
+        """Set up the test environment"""
         super(TestPayslipBase, self).setUp()
 
         # Some salary rules references

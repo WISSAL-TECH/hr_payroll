@@ -1,5 +1,6 @@
 #-*- coding:utf-8 -*-
-
+"""This module defines the ContributionRegisterReport abstract model
+for generating the Payroll Contribution Register Report    """
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -8,11 +9,12 @@ from odoo.exceptions import UserError
 
 
 class ContributionRegisterReport(models.AbstractModel):
+    """Payroll Contribution Register Report"""
     _name = 'report.hr_payroll_community.report_contributionregister'
     _description = 'Payroll Contribution Register Report'
 
     def _get_payslip_lines(self, register_ids, date_from, date_to):
-
+        """Retrieve payslip lines for the given contribution registers, date range, and state"""
         result = {}
         self.env.cr.execute("""
             SELECT pl.id from hr_payslip_line as pl
@@ -30,14 +32,15 @@ class ContributionRegisterReport(models.AbstractModel):
 
     @api.model
     def _get_report_values(self, docids, data=None):
-
+        """Get the values required for generating the contribution register report"""
         if not data.get('form'):
             raise UserError(_("Form content is missing, this report cannot be printed."))
 
         register_ids = self.env.context.get('active_ids', [])
         contrib_registers = self.env['hr.contribution.register'].browse(register_ids)
         date_from = data['form'].get('date_from', fields.Date.today())
-        date_to = data['form'].get('date_to', str(datetime.now() + relativedelta(months=+1, day=1, days=-1))[:10])
+        date_to = data['form'].get('date_to', str(datetime.now() + relativedelta(
+            months=+1, day=1, days=-1))[:10])
         lines_data = self._get_payslip_lines(register_ids, date_from, date_to)
         lines_total = {}
         for register in contrib_registers:

@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-
+"""Employee contract"""
 from odoo import api, fields, models
 
 
@@ -23,7 +23,8 @@ class HrContract(models.Model):
     ], string='Scheduled Pay', index=True, default='monthly',
         help="Defines the frequency of the wage payment.")
     resource_calendar_id = fields.Many2one(required=True, help="Employee's working schedule.")
-    hra = fields.Monetary(string='Allocation de logement', tracking=True, help="House rent allowance.")
+    hra = fields.Monetary(string='Allocation de logement', tracking=True,
+                          help="House rent allowance.")
     travel_allowance = fields.Monetary(string="Allocation de Voyage", help="Travel allowance")
     da = fields.Monetary(string="Allocation de cherté", help="Dearness allowance")
     meal_allowance = fields.Monetary(string="Indemnité de repas", help="Meal allowance")
@@ -33,8 +34,8 @@ class HrContract(models.Model):
     def get_all_structures(self):
 
         """
-        @return: the structures linked to the given contracts, ordered by hierachy (parent=False first,
-                 then first level children and so on) and without duplicata
+        @return: the structures linked to the given contracts, ordered by hierachy
+        (parent=False first, then first level children and so on) and without duplicata
         """
         structures = self.mapped('struct_id')
         if not structures:
@@ -43,15 +44,18 @@ class HrContract(models.Model):
         return list(set(structures._get_parent_structure().ids))
 
     def get_attribute(self, code, attribute):
-
-        return self.env['hr.contract.advantage.template'].search([('code', '=', code)], limit=1)[attribute]
+        """get contract advantage attributes"""
+        return self.env['hr.contract.advantage.template'].search([('code', '=', code)],
+                                                                 limit=1)[attribute]
 
     def set_attribute_value(self, code, active):
+        """set contrat attributes"""
         for contract in self:
 
             if active:
 
-                value = self.env['hr.contract.advantage.template'].search([('code', '=', code)], limit=1).default_value
+                value = self.env['hr.contract.advantage.template'].search([('code', '=', code)],
+                                                                          limit=1).default_value
                 contract[code] = value
             else:
 
@@ -59,11 +63,16 @@ class HrContract(models.Model):
 
 
 class HrContractAdvandageTemplate(models.Model):
+    """
+     Employee's Advantage on Contract
+    """
     _name = 'hr.contract.advantage.template'
     _description = "Employee's Advantage on Contract"
 
     name = fields.Char('Name', required=True)
     code = fields.Char('Code', required=True)
-    lower_bound = fields.Float('Lower Bound', help="Lower bound authorized by the employer for this advantage")
-    upper_bound = fields.Float('Upper Bound', help="Upper bound authorized by the employer for this advantage")
+    lower_bound = fields.Float('Lower Bound',
+                               help="Lower bound authorized by the employer for this advantage")
+    upper_bound = fields.Float('Upper Bound',
+                               help="Upper bound authorized by the employer for this advantage")
     default_value = fields.Float('Default value for this advantage')
