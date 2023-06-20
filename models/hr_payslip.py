@@ -187,10 +187,11 @@ class HrPayslip(models.Model):
         #Compute total number of hours of each type of work entry
         entries = {}
         for work_entry in work_entries:
+            duration = (work_entry.date_stop - work_entry.date_start).total_seconds() / (60 * 60)
             if work_entry.work_entry_type_id.code in entries :
-                entries[work_entry.work_entry_type_id.code] += work_entry.duration
+                entries[work_entry.work_entry_type_id.code] += duration
             else :
-                entries.update({work_entry.work_entry_type_id.code : work_entry.duration} )
+                entries.update({work_entry.work_entry_type_id.code : duration} )
 
 
         resource = contracts.resource_calendar_id
