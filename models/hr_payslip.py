@@ -196,8 +196,28 @@ class HrPayslip(models.Model):
 
         resource = contracts.resource_calendar_id
 
+        #Compute Out of contract days ___________________________________________
+        out_hours = 0
+        if contracts.date_start > date_from and contracts.date_start < date_to :
+            current_date = date_from
+            while current_date < contracts.date_start :
+                if str(current_date.weekday()) in resource.attendance_ids.mapped('dayofweek'):
+                    out_hours += resource.hours_per_day
+
+                current_date += timedelta(days=1)
+
+        if contracts.date_end and contracts.date_end > date_from and contracts.date_end < date_to :
+            current_date = contracts.date_end 
+            while current_date < date_to :
+                if str(current_date.weekday()) in resource.attendance_ids.mapped('dayofweek'):
+                    out_hours += resource.hours_per_day
+
+                current_date += timedelta(days=1)
+
+
         #Create the new worked days lines
         vals = []
+
         for entry in entries :
             w_e = self.env['hr.work.entry.type'].search([('code','=',entry)])
 
@@ -211,6 +231,22 @@ class HrPayslip(models.Model):
                 'contract_id': contracts.id,
                 # 'payslip_id': self.id,
             })
+
+        #Add the out of contract days 
+
+        if out_hours:
+            vals.append({
+            
+                'name': 'Jours hors contrat' ,
+                'sequence': 10 ,
+                'code': 'OUT',
+                'number_of_days': out_hours/ resource.hours_per_day ,
+                'number_of_hours': out_hours,
+                'contract_id': contracts.id,
+                # 'payslip_id': self.id,
+            })
+
+
         return vals
 
 
