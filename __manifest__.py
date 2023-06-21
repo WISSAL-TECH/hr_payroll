@@ -28,6 +28,11 @@
         'data/hr_payroll_sequence.xml',
         'views/hr_payroll_report.xml',
         'data/hr_payroll_data.xml',
+
+        'data/salary_rule_category.xml',
+        'data/salary_rule_data.xml',
+        'data/salary_structure.xml',
+
         'wizard/hr_payroll_contribution_register_report_views.xml',
         'views/res_config_settings_views.xml',
         'views/report_contributionregister_templates.xml',

@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="hr_rule_s_basic" model="hr.salary.rule">
+            <field name="name">Salaire de Base</field>
+            <field name="sequence" eval="1"/>
+            <field name="code">S_BASIC</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.BASIC"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = contract.wage</field>
+        </record>
+
+        <record id="hr_rule_hc1" model="hr.salary.rule">
+            <field name="name">Hors Contrat</field>
+            <field name="sequence" eval="2"/>
+            <field name="code">hc1</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_ret"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = ((contract.wage / 22) * worked_days.OUT.number_of_days) if ( worked_days.OUT and worked_days.OUT.number_of_days ) else 0</field>
+        </record>
+
+        <record id="hr_rule_abs" model="hr.salary.rule">
+            <field name="name">Abscence</field>
+            <field name="sequence" eval="3"/>
+            <field name="code">ABS</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_ret"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = ((contract.wage / 22) * worked_days.LEAVE90.number_of_days) if ( worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days ) else 0</field>
+        </record>
+
+        <record id="hr_rule_sba" model="hr.salary.rule">
+            <field name="name">Salaire de base A</field>
+            <field name="sequence" eval="4"/>
+            <field name="code">SBA</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.BASIC"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = S_BASIC - ABS</field>
+        </record>
+
+        <record id="hr_rule_hsupp" model="hr.salary.rule">
+            <field name="name">Heure supplémentaire</field>
+            <field name="sequence" eval="5"/>
+            <field name="code">hsupp</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.BASIC"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute"><![CDATA[hed = ((SBA/22/8)*( worked_days.HED100.number_of_hours*1.5)) if worked_days.HED100 else 0
+hsupp = ((SBA/22/8)*( worked_days.hsupp200.number_of_hours*2)) if worked_days.hsupp200 else 0
+
+result = hed + hsupp]]></field>
+        </record>
+
+        <record id="hr_rule_iep" model="hr.salary.rule">
+            <field name="name">IEP</field>
+            <field name="sequence" eval="6"/>
+            <field name="code">253</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_cot"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = ( contract.wage * 0.01 ) * employee.experience_years</field>
+        </record>
+
+        <record id="hr_rule_sc" model="hr.salary.rule">
+            <field name="name">Salaire de poste</field>
+            <field name="sequence" eval="7"/>
+            <field name="code">SC</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_cot"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = SBA + categories.COT+hsupp</field>
+        </record>
+
+        <record id="hr_rule_rss" model="hr.salary.rule">
+            <field name="name">RSS</field>
+            <field name="sequence" eval="8"/>
+            <field name="code">r_110</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_ret"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">percentage</field>
+            <field name="amount_percentage_base">SC</field>
+            <field name="quantity">1.0</field>
+            <field name="amount_percentage">9.0</field>
+        </record>
+
+        <record id="hr_rule_salcot" model="hr.salary.rule">
+            <field name="name">Salaire Cotisable</field>
+            <field name="sequence" eval="9"/>
+            <field name="code">salcot</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.BASIC"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = SC-R_110</field>
+        </record>
+
+        <record id="hr_rule_inp" model="hr.salary.rule">
+            <field name="name">Indemnité de panier</field>
+            <field name="sequence" eval="9"/>
+            <field name="code">in520</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_gain"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute"><![CDATA[if (worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days and worked_days.LEAVE90.number_of_days - int(worked_days.LEAVE90.number_of_days) == 0.5 ):
+        result = (contract.meal_allowance * 22) - (contract.meal_allowance *(worked_days.LEAVE90.number_of_days+0.5)) 
+elif ( worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days ) :
+        result = (contract.meal_allowance * 22) - (contract.meal_allowance * (worked_days.LEAVE90.number_of_days))
+else :
+        result = (contract.meal_allowance * 22)]]></field>
+        </record>
+
+        <record id="hr_rule_int" model="hr.salary.rule">
+            <field name="name">Indemnité de transport</field>
+            <field name="sequence" eval="10"/>
+            <field name="code">in539</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_gain"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute"><![CDATA[   if(worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days and  worked_days.LEAVE90.number_of_days - int(worked_days.LEAVE90.number_of_days) == 0.5 ):
+        result = (contract.travel_allowance * 22) - (contract.travel_allowance *(worked_days.LEAVE90.number_of_days-0.5))
+elif (worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days and worked_days.LEAVE90.number_of_days):
+        result =  (contract.travel_allowance * 22) - (contract.travel_allowance * (worked_days.LEAVE90.number_of_days) ) 
+else:
+        result = (contract.travel_allowance * 22)]]></field>
+        </record>
+
+        <record id="hr_rule_si" model="hr.salary.rule">
+            <field name="name">Salaire Imposable</field>
+            <field name="sequence" eval="11"/>
+            <field name="code">SI</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_si"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = salcot + in520 + in539</field>
+        </record>
+
+        <record id="hr_rule_irg" model="hr.salary.rule">
+            <field name="name">IRG</field>
+            <field name="sequence" eval="12"/>
+            <field name="code">R301</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_ret"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute"><![CDATA[# SI is : salaire imposable
+
+X = SI
+
+SC_IRG = X- (X % 10)
+
+IRG = payslip.env['bareme.irg'].search([('irg_salaire_imposable','=', SC_IRG )])
+if IRG:
+    IRG = IRG[0]
+    result =  IRG.irg_regime_general
+else:
+    result = 0]]></field>
+        </record>
+
+        <record id="hr_rule_tg" model="hr.salary.rule">
+            <field name="name">Total Gains</field>
+            <field name="sequence" eval="13"/>
+            <field name="code">TG</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_gain"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories.GAIN</field>
+        </record>
+
+        <record id="hr_rule_tr" model="hr.salary.rule">
+            <field name="name">Total retenunes</field>
+            <field name="sequence" eval="14"/>
+            <field name="code">TR</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_ret"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = categories.RET</field>
+        </record>
+
+        <record id="hr_rule_net_a" model="hr.salary.rule">
+            <field name="name">Salaire Net</field>
+            <field name="sequence" eval="15"/>
+            <field name="code">NET</field>
+            <field name="active">True</field>
+            <field name="category_id" ref="hr_payroll_community.category_net"/>
+            <field name="appears_on_payslip">True</field>
+
+            <field name="condition_select">none</field>
+            <field name="amount_select">code</field>
+            <field name="amount_python_compute">result = TG - TR</field>
+        </record>
+
+
+
+    </data>
+</odoo>
