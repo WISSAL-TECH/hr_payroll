@@ -99,7 +99,7 @@ result = hed + hsupp]]></field>
         <record id="hr_rule_rss" model="hr.salary.rule">
             <field name="name">RSS</field>
             <field name="sequence" eval="8"/>
-            <field name="code">r_110</field>
+            <field name="code">R_110</field>
             <field name="active">True</field>
             <field name="category_id" ref="hr_payroll_community.category_ret"/>
             <field name="appears_on_payslip">True</field>
@@ -152,7 +152,7 @@ else :
 
             <field name="condition_select">none</field>
             <field name="amount_select">code</field>
-            <field name="amount_python_compute"><![CDATA[   if(worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days and  worked_days.LEAVE90.number_of_days - int(worked_days.LEAVE90.number_of_days) == 0.5 ):
+            <field name="amount_python_compute"><![CDATA[if(worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days and  worked_days.LEAVE90.number_of_days - int(worked_days.LEAVE90.number_of_days) == 0.5 ):
         result = (contract.travel_allowance * 22) - (contract.travel_allowance *(worked_days.LEAVE90.number_of_days-0.5))
 elif (worked_days.LEAVE90 and worked_days.LEAVE90.number_of_days and worked_days.LEAVE90.number_of_days):
         result =  (contract.travel_allowance * 22) - (contract.travel_allowance * (worked_days.LEAVE90.number_of_days) ) 
